@@ -1,6 +1,8 @@
 # Downloads files from the web and verifies their checksum. Will use local copy in current directory, if it exists
 load.web.file <- function(
   url, md5sum, outfile, zipfile = F) {
+  # set wd in data folder
+  setwd("data/")
   # check if local file exists
   if (file.exists(outfile)) {
     # verify checksum
@@ -26,6 +28,7 @@ load.web.file <- function(
       stop(sprintf("Remote file %s has wrong checksum: %s", url, realsum))
     }
   }
+  setwd("../")
 }
 
 # Modify ordering of the clusters using clustering callback option

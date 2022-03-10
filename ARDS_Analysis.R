@@ -29,7 +29,7 @@ if(!dir.exists(paste0(Sys.Date(),sep=""))) {
 #### Download Data ---
 
 # download preprocessed proteomics data from figshare
-
+# data files will be saved in data/
 file_data <- "ARDS.xlsx"
 load.web.file(
   url="https://figshare.com/ndownloader/files/34347182",
@@ -48,14 +48,14 @@ load.web.file(
 
 D0 <- 
   # load proteomics data
-  maplet::mt_load_xls(file=file_data,sheet="assay",samples_in_rows=F,id_col="feature_id") %>%
+  maplet::mt_load_xls(file=sprintf("data/%s",file_data),sheet="assay",samples_in_rows=F,id_col="feature_id") %>%
   # load sample annotations
-  maplet::mt_anno_xls(file=file_data,sheet="clin",anno_type="samples",anno_id_col="sample_id",data_id_col="sample") %>%
+  maplet::mt_anno_xls(file=sprintf("data/%s",file_data),sheet="clin",anno_type="samples",anno_id_col="sample_id",data_id_col="sample") %>%
   {.}
 colnames(rowData(D0)) <- "ids"
 D0 %<>%
   # load protein annotations
-  maplet::mt_anno_xls(file=file_data,sheet="rowData",anno_type="features",anno_id_col="feature_id",data_id_col="ids") %>%
+  maplet::mt_anno_xls(file=sprintf("data/%s",file_data),sheet="rowData",anno_type="features",anno_id_col="feature_id",data_id_col="ids") %>%
   # flag data as log-transformed
   maplet::mt_load_flag_logged()
 

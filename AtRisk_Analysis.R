@@ -29,7 +29,7 @@ if(!dir.exists(paste0(Sys.Date(),sep=""))) {
 #### Download Data ---
 
 # download preprocessed proteomics data from figshare
-
+# data files will be saved in data/
 file_data <- "AtRisk.xlsx"
 load.web.file(
   url="https://figshare.com/ndownloader/files/34347179",
@@ -48,11 +48,11 @@ load.web.file(
 
 Dyy <- 
   # load proteomics data
-  maplet::mt_load_xls(file=file_data,sheet="data",samples_in_rows=T) %>%
+  maplet::mt_load_xls(file=sprintf("data/%s",file_data),sheet="data",samples_in_rows=T) %>%
   # load sample annotations
-  maplet::mt_anno_xls(file=file_data,sheet="sampleanno",anno_type="samples",anno_id_col="sample_id_match",data_id_col="sample") %>%
+  maplet::mt_anno_xls(file=sprintf("data/%s",file_data),sheet="sampleanno",anno_type="samples",anno_id_col="sample_id_match",data_id_col="sample") %>%
   # load sample annotations
-  maplet::mt_anno_xls(file=file_data,sheet="proteinanno",anno_type="features",anno_id_col="feature_id",data_id_col="name") %>%
+  maplet::mt_anno_xls(file=sprintf("data/%s",file_data),sheet="proteinanno",anno_type="features",anno_id_col="feature_id",data_id_col="name") %>%
   # flag as logged
   maplet::mt_load_flag_logged() %>%
   {.}

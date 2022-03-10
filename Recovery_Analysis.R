@@ -177,7 +177,7 @@ p_fu <- z1 %>%
 
 # save plots to files
 pdf(sprintf("%s/Figure_6B.pdf", Sys.Date()), width=5, height=5, onefile = F)
-p_fu
+print(p_fu)
 dev.off()
 
 #### Figure 6C ----
@@ -225,9 +225,9 @@ p <- lapply(res_diff$protein %>% {names(.)=.;.}, function(x){
 # save boxplots to file
 ncol=5
 pdf(sprintf("%s/Figure_6C.pdf", Sys.Date()), width = 5*ncol, height = 5*ceiling(length(prot)/5), onefile = F)
-ggarrange(plotlist = p,
+print(ggarrange(plotlist = p,
           ncol=ncol, nrow=ceiling(length(prot)/ncol),
-          common.legend = T)
+          common.legend = T))
 dev.off()
 
 #### Supplementary Figure 7 A-D -----
@@ -274,9 +274,9 @@ p_avProt<- z1 %>%
 
 # save plots to files
 pdf(sprintf("%s/SupplementaryFigure_7A-D.pdf", Sys.Date()), width=20, height=5, onefile = F)
-ggarrange(p_platelet,p_age,p_avProt,p_ang2,
+print(ggarrange(p_platelet,p_age,p_avProt,p_ang2,
           ncol=4,nrow=1,
-          common.legend = T)
+          common.legend = T))
 dev.off()
 
 #### Supplementary Figure 7 E-F ----
@@ -347,7 +347,7 @@ p_a <- dt %>%
 
 # save boxplots to file
 pdf(sprintf("%s/SupplementaryFigure_7E-F.pdf", Sys.Date()), width = 10, height = 6, onefile = F)
-ggarrange(p_pl,p_a,
+print(ggarrange(p_pl,p_a,
           ncol=2,nrow=1,
-          common.legend = T)
+          common.legend = T))
 dev.off()

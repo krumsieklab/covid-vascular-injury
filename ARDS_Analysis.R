@@ -128,7 +128,7 @@ out <- pheatmap(X,annotation_col = anno %>% dplyr::select(Group,Mortality,Platel
 
 # save heatmap to file
 pdf(sprintf("%s/Figure_3A.pdf",Sys.Date()), width = 12, height = 8)
-out
+print(out)
 dev.off()
 
 #### Figure 3B -----
@@ -173,7 +173,7 @@ p_death_surv <- survminer::ggsurvplot(fit = fit, data = dt_surv, risk.table = T,
 
 # save plots to files
 pdf(sprintf("%s/Figure_3B.pdf", Sys.Date()), width=5, height=6, onefile = F)
-p_death_surv
+print(p_death_surv)
 dev.off()
 
 #### Figure 3C ----
@@ -191,7 +191,7 @@ p_ANG2 <- z %>%
 
 # save plots to files
 pdf(sprintf("%s/Figure_3C.pdf", Sys.Date()), width=6, height=5, onefile = F)
-p_ANG2
+print(p_ANG2)
 dev.off()
 
 #### Figure 5 ----
@@ -225,16 +225,16 @@ p_cor <- zsub %>%
 
 # save plots to file
 pdf(sprintf("%s/Figure_5AB.pdf", Sys.Date()), width=12, height=5, onefile = F)
-ggarrange(p_RIPK3, p_cor,
+print(ggarrange(p_RIPK3, p_cor,
           ncol=2, nrow=1,
           labels = "AUTO",
-          common.legend = T)
+          common.legend = T))
 dev.off()
 
 #### Supplementary Figure 1AB ----
 
 # load O-link validation data
-df_olink <- read_excel(path = "OtherProteomics.xlsx", sheet = "Olink_validation")
+df_olink <- read_excel(path = "data/OtherProteomics.xlsx", sheet = "Olink_validation")
 
 # merge Olink data for CD40L and ANGPT1 with new ELISA data  
 df_plot <- X %>%
@@ -277,13 +277,13 @@ gg2 <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(p){
 
 # save plots to file
 pdf(sprintf("%s/SupplementaryFigure_1AB.pdf", Sys.Date()), width = 10, height = 5)
-ggarrange(plotlist = gg2)
+print(ggarrange(plotlist = gg2))
 dev.off()
 
 #### Supplementary Figure 1CD ----
 
 # load ELISA data
-df_controls <- read_excel(path = "OtherProteomics.xlsx", sheet = "Controls") 
+df_controls <- read_excel(path = "data/OtherProteomics.xlsx", sheet = "Controls") 
 
 gg <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(prot){
   df_controls %>%
@@ -301,8 +301,8 @@ gg <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(prot){
 
 # save to file
 pdf(sprintf("%s/SupplementaryFigure_1CD.pdf", Sys.Date()), width = 10, height = 5, onefile = F)
-ggarrange(plotlist = gg,
-          common.legend = T)
+print(ggarrange(plotlist = gg,
+          common.legend = T))
 dev.off()
 
 #### Supplementary Figure 4 (Heatmap) ----
@@ -371,7 +371,7 @@ out2 <- pheatmap(X2,annotation_col = anno2 %>% dplyr::select(Group,Mortality,Pla
 
 # save heatmap to file
 pdf(sprintf("%s/SupplementaryFigure_4A.pdf",Sys.Date()), width = 12, height = 8)
-out2
+print(out2)
 dev.off()
 
 #### Supplementary Figure 4 (Boxplots) ----
@@ -507,15 +507,15 @@ p_cor <- zsub %>%
 
 # save plots to files
 pdf(sprintf("%s/SupplementaryFigure_4B.pdf", Sys.Date()), width=5, height=6, onefile = F)
-p_death_surv
+print(p_death_surv)
 dev.off()
 
 # save plots to files
 pdf(sprintf("%s/SupplementaryFigure_4CDE.pdf", Sys.Date()), width=15, height=5, onefile = F)
-ggarrange(p_platelet,p_age,p_ANG2, 
+print(ggarrange(p_platelet,p_age,p_ANG2, 
           ncol=3,nrow=1,
           labels = c("C","D","E"),
-          common.legend = T)
+          common.legend = T))
 dev.off()
 
 ##### Supplementary Figure 5 ----
@@ -578,8 +578,8 @@ p_avProt <- z %>%
 
 # save plots to files
 pdf(sprintf("%s/SupplementaryFigure_5.pdf", Sys.Date()), width=15, height=5, onefile = F)
-ggarrange(p_platelet,p_avProt, p_age,
+print(ggarrange(p_platelet,p_avProt, p_age,
           ncol=3,nrow=1,
           labels = "AUTO",
-          common.legend = T)
+          common.legend = T))
 dev.off()

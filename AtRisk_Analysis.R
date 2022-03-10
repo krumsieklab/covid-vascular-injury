@@ -172,7 +172,7 @@ p_prset <- res_full$death %>%
   ggtitle("Statistical Results")
 
 pdf(sprintf("%s/Figure_2A.pdf", Sys.Date()), width = 7, height = 5)
-p_prset
+print(p_prset)
 dev.off()
 
 #### Figure 2B ----
@@ -222,9 +222,9 @@ g <- lapply(prot %>%  {names(.)=.;.}, function(p){
 # save to file
 ncol=5
 pdf(sprintf("%s/Figure_2B.pdf", Sys.Date()), width = 5*ncol, height = 5*ceiling(length(prot)/5), onefile = F)
-ggarrange(plotlist = g,
+print(ggarrange(plotlist = g,
           common.legend = T,
-          ncol=ncol, nrow=ceiling(length(prot)/ncol))
+          ncol=ncol, nrow=ceiling(length(prot)/ncol)))
 dev.off()
 
 #### Figure 2C ----
@@ -347,16 +347,16 @@ p_age <- z %>%
 
 # save plot to file
 pdf(sprintf("%s/SupplementaryFigure_3.pdf", Sys.Date()), width=12, height=6, onefile = F)
-ggarrange(p_avProt,p_age,
+print(ggarrange(p_avProt,p_age,
           ncol=2, nrow=1,
           labels="AUTO",
-          common.legend = T)
+          common.legend = T))
 dev.off()
 
 #### Figure 4B ----
 
 # load autopsy quantification data
-df <- read_excel(path="OtherProteomics.xlsx",sheet = "Autopsy_quantification",col_names = T) %>%
+df <- read_excel(path="data/OtherProteomics.xlsx",sheet = "Autopsy_quantification",col_names = T) %>%
   dplyr::mutate(Group=factor(Group,levels = c("Low ANGPT2","High ANGPT2")))
 
 # boxplot
@@ -369,7 +369,7 @@ p <- df %>%
 
 # save to file
 pdf(sprintf("%s/Figure_4B.pdf",Sys.Date()), width = 5, height = 5)
-p
+print(p)
 dev.off()
 
 #### Figure 4C ----

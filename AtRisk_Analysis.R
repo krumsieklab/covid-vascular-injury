@@ -26,9 +26,25 @@ if(!dir.exists(paste0(Sys.Date(),sep=""))) {
   dir.create(paste0(Sys.Date(),sep=""))
 }
 
-#### Load preprocessed data ----
+#### Download Data ---
+
+# download preprocessed proteomics data from figshare
 
 file_data <- "AtRisk.xlsx"
+load.web.file(
+  url="https://figshare.com/ndownloader/files/34347179",
+  md5sum = "c705003b12c093507673c06e64165e12",
+  outfile = file_data
+)
+
+file_data_other <- "OtherProteomics.xlsx"
+load.web.file(
+  url="https://figshare.com/ndownloader/files/34347242",
+  md5sum = "ddbd0b10b1df1dfd3d9b062a6df16810",
+  outfile = file_data_other
+)
+
+#### Load preprocessed data ----
 
 Dyy <- 
   # load proteomics data
@@ -117,7 +133,7 @@ writeData(wb, sheet=sheet, res_full$platelet %>% dplyr::select(name,estimate,std
           rowNames = F, colNames = T)
 saveWorkbook(wb, sprintf("%s/AtRisk_DifferentialAnalysisResults.xlsx",Sys.Date()), overwrite = TRUE)
 
-#### Figure 3A ----
+#### Figure 2A ----
 
 p_prset <- res_full$death %>%
   dplyr::mutate(death_association = -log10(p.adj)) %>%
@@ -156,11 +172,11 @@ p_prset <- res_full$death %>%
                      name="Significant\nassociations") +
   ggtitle("Statistical Results")
 
-pdf(sprintf("%s/Figure_3A.pdf", Sys.Date()), width = 7, height = 5)
+pdf(sprintf("%s/Figure_2A.pdf", Sys.Date()), width = 7, height = 5)
 p_prset
 dev.off()
 
-#### Figure 3B ----
+#### Figure 2B ----
 
 # create dataframe for plotting
 dt <- Dzz %>% assay %>% as.data.frame %>% t
@@ -206,13 +222,13 @@ g <- lapply(prot %>%  {names(.)=.;.}, function(p){
 
 # save to file
 ncol=5
-pdf(sprintf("%s/Figure_3B.pdf", Sys.Date()), width = 5*ncol, height = 5*ceiling(length(prot)/5), onefile = F)
+pdf(sprintf("%s/Figure_2B.pdf", Sys.Date()), width = 5*ncol, height = 5*ceiling(length(prot)/5), onefile = F)
 ggarrange(plotlist = g,
           common.legend = T,
           ncol=ncol, nrow=ceiling(length(prot)/ncol))
 dev.off()
 
-#### Figure 3C ----
+#### Figure 2C ----
 
 D1 <- Dzz %>% 
   # filter only protein set
@@ -266,7 +282,7 @@ callback = function(hc, mat){
 n_clust <- 3
 out2 <- pheatmap(mat = dthh, 
                  # cellwidth = 10, cellheight=10,
-                 annotation_col = anno %>% dplyr::select(-Patient_ID),
+                 annotation_col = anno %>% dplyr::select(-Patient_ID, -autopsy),
                  annotation_colors = ann_colors,
                  clustering_method = "ward.D2", 
                  cutree_cols = n_clust, cutree_rows = 2,
@@ -278,7 +294,7 @@ out2 <- pheatmap(mat = dthh,
                  breaks = breaksList)
 
 # save heatmap to file
-pdf(sprintf("%s/Figure_3C.pdf", Sys.Date()), width = 12, height = 7)
+pdf(sprintf("%s/Figure_2C.pdf", Sys.Date()), width = 12, height = 7)
 print(out2)
 dev.off()
 
@@ -336,4 +352,70 @@ ggarrange(p_avProt,p_age,
           ncol=2, nrow=1,
           labels="AUTO",
           common.legend = T)
+dev.off()
+
+#### Figure 4B ----
+
+df <- read_excel(path="OtherProteomics.xlsx",sheet = "Autopsy_quantification",col_names = T) %>%
+  dplyr::mutate(Group=factor(Group,levels = c("Low ANGPT2","High ANGPT2")))
+
+# boxplot
+p <- df %>%
+  ggplot(aes(x=Group,y=log10(CD61))) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(position=position_jitter(width = 0.2)) +
+  theme_bw() +
+  ggtitle(sprintf("CD61 p-value %.2e",wilcox.test(x=log10(df$CD61[df$Group=="High ANGPT2"]),y=log10(df$CD61[df$Group=="Low ANGPT2"]))$p.value))
+
+pdf(sprintf("%s/Figure_4B.pdf",Sys.Date()), width = 5, height = 5)
+p
+dev.off()
+
+#### Figure 4C ----
+
+# define autopsy patients identifiers
+autopsy_patients <- data.frame(Patient_ID=c(832,833,6),
+                               subject_id=c("Patient_832","Patient_833","Patient_6"),
+                               label=c("P1","P2","P3"))
+
+# create dataframe for plotting 
+df <- dthh %>% 
+  as.data.frame %>%
+  dplyr::select(any_of(autopsy_patients$subject_id)) %>%
+  t %>% as.data.frame %>%
+  tibble::rownames_to_column("subject_id") %>%
+  reshape2::melt() %>%
+  dplyr::left_join(autopsy_patients, by="subject_id") %>%
+  dplyr::mutate(dummyvar=case_when(label=="P3"~3,
+                                   label=="P2"~2,
+                                   label=="P1"~1)) %>%
+  dplyr::left_join(D1 %>% rowData %>% as.data.frame %>% dplyr::select(name, Assay), by=c("variable"="name")) %>%
+  dplyr::rename(protein_name=Assay) %>%
+  dplyr::mutate(text=ifelse(label=="P3",protein_name,""))
+
+# create vector of deltas for scatterplot
+b <- runif(nrow(df), -0.1, 0.1)
+
+# plot boxplot
+gg <- df %>%
+  ggplot(aes(label=text)) +
+  geom_boxplot(aes(x=dummyvar, y=value, group=subject_id), 
+               outlier.shape = NA) +
+  geom_point(aes(x=dummyvar + b, y=value)) +
+  # geom_hline(yintercept = df$value %>% median, size=1) +
+  geom_text_repel(aes(x=dummyvar + b, y=value)) +
+  geom_line(aes(x=dummyvar + b, y=value, group=variable), 
+            color="gray60", size=0.3) +
+  scale_x_continuous(breaks = c(1,2,3), labels = c("P1", "P2","P3"))+
+  xlab("Patient") +
+  ylab("") +
+  theme_bw() +
+  ggtitle(sprintf("p-value 1-2: %.2e / p-value 2-3: %.2e / p-value 1-3: %.2e",
+                  wilcox.test(x=df$value[df$dummyvar %in% c(1)],y=df$value[df$dummyvar %in% c(2)], paired = T) %>% .$p.value,
+                  wilcox.test(x=df$value[df$dummyvar %in% c(2)],y=df$value[df$dummyvar %in% c(3)], paired = T) %>% .$p.value,
+                  wilcox.test(x=df$value[df$dummyvar %in% c(1)],y=df$value[df$dummyvar %in% c(3)], paired = T) %>% .$p.value))
+
+# save plot to file
+pdf(sprintf("%s/Figure_4C.pdf", Sys.Date()), width = 8, height = 5)
+print(gg)
 dev.off()

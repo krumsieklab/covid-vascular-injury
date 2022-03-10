@@ -26,9 +26,25 @@ if(!dir.exists(paste0(Sys.Date(),sep=""))) {
   dir.create(paste0(Sys.Date(),sep=""))
 }
 
-#### Load Data ----
+#### Download Data ---
+
+# download preprocessed proteomics data from figshare
 
 file_data <- "ARDS.xlsx"
+load.web.file(
+  url="https://figshare.com/ndownloader/files/34347182",
+  md5sum = "46a77a9ac7dec7ed50c3e1b0d444ba3b",
+  outfile = file_data
+)
+
+file_data_other <- "OtherProteomics.xlsx"
+load.web.file(
+  url="https://figshare.com/ndownloader/files/34347242",
+  md5sum = "ddbd0b10b1df1dfd3d9b062a6df16810",
+  outfile = file_data_other
+)
+
+#### Load Data ----
 
 D0 <- 
   # load proteomics data
@@ -48,7 +64,7 @@ D0 %<>%
 # load protein set defined in at risk cohort
 prot <- load_protein_list(filename=sprintf("%s/Protlist.Rdata",Sys.Date()))
 
-#### Figure 4A ----
+#### Figure 3A ----
 
 D1 <- D0 %>%
   # scale data
@@ -111,11 +127,11 @@ out <- pheatmap(X,annotation_col = anno %>% dplyr::select(Group,Mortality,Platel
                 breaks = breaksList)
 
 # save heatmap to file
-pdf(sprintf("%s/Figure_4A.pdf",Sys.Date()), width = 12, height = 8)
+pdf(sprintf("%s/Figure_3A.pdf",Sys.Date()), width = 12, height = 8)
 out
 dev.off()
 
-#### Compute Cluster differential analysis ----
+#### Figure 3B -----
 
 # extract clusters and get annotations for differential analysis
 z <- data.frame(Cluster=sort(cutree(out$tree_col, k=2))) %>% 
@@ -139,8 +155,6 @@ da <- data.frame(# Fisher's test for Death
   age = wilcox.test(x=z$age[z$Cluster==1], y=z$age[z$Cluster==2])$p.value,
   avProt = wilcox.test(x=z$averageProt[z$Cluster==1], y=z$averageProt[z$Cluster==2])$p.value)
 
-#### Figure 4B -----
-
 dt_surv <- z %>%
   dplyr::left_join(D1 %>% colData %>% as_data_frame %>% dplyr::select(subject_id, event,time_diff), 
                    by="subject_id") %>%
@@ -156,11 +170,11 @@ p_death_surv <- survminer::ggsurvplot(fit = fit, data = dt_surv, risk.table = T,
                                       palette = c("black","gray50")) 
 
 # save plots to files
-pdf(sprintf("%s/Figure_4B.pdf", Sys.Date()), width=5, height=6, onefile = F)
+pdf(sprintf("%s/Figure_3B.pdf", Sys.Date()), width=5, height=6, onefile = F)
 p_death_surv
 dev.off()
 
-#### Figure 4C ----
+#### Figure 3C ----
 
 # plot differential log(ANGPT2) in the two clusters
 p_ANG2 <- z %>%
@@ -174,7 +188,7 @@ p_ANG2 <- z %>%
   ggtitle(sprintf("Log(ANGPT2) p-value: %.2e", da$ANG2))
 
 # save plots to files
-pdf(sprintf("%s/Figure_4C.pdf", Sys.Date()), width=5, height=6, onefile = F)
+pdf(sprintf("%s/Figure_3C.pdf", Sys.Date()), width=6, height=5, onefile = F)
 p_ANG2
 dev.off()
 
@@ -207,76 +221,80 @@ p_cor <- zsub %>%
   ylab("Log(RIPK3)") +
   ggtitle(sprintf("Log(ANGPT2) vs Log(RIPK3): cor %.2f, p-value %.2e", cc$estimate, cc$p.value))
 
-pdf(sprintf("%s/Figure_5.pdf", Sys.Date()), width=12, height=5, onefile = F)
+pdf(sprintf("%s/Figure_5AB.pdf", Sys.Date()), width=12, height=5, onefile = F)
 ggarrange(p_RIPK3, p_cor,
           ncol=2, nrow=1,
           labels = "AUTO",
           common.legend = T)
 dev.off()
 
-##### Supplementary Figure 5 ----
+#### Supplementary Figure 1AB ----
 
-# plot differential death in the two clusters
-p_death <- z %>% 
-  dplyr::select(Cluster, Mortality) %>% table() %>%
-  as.data.frame %>%
-  ggplot(aes(fill=Mortality, y=Freq, x=Cluster)) + 
-  geom_bar(position="stack", stat="identity") +
-  scale_fill_manual(values = ann_colors$Mortality) +
-  theme_bw() +
-  ylab("Number of patients") +
-  ggtitle(sprintf("Mortality p-value: %.2e", da$mortality))
+df_olink <- read_excel(path = "OtherProteomics.xlsx", sheet = "Olink_validation")
 
-# plot differential P:F ratio in the two clusters
-p_PF <- z %>%
-  ggplot(aes(x=as.factor(Cluster), y=intubation_pf_ratio)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
-  scale_colour_manual(values = ann_colors$Group) +
-  theme_bw() +
-  xlab("Cluster") +
-  ylab("P:F Ratio at intubation") +
-  ggtitle(sprintf("P:F Ratio p-value: %.2e", da$pf))
+# merge Olink data for CD40L and ANGPT1 with new ELISA data  
+df_plot <- X %>%
+  as.data.frame %>% 
+  # subset patients
+  dplyr::select(any_of(anno %>% dplyr::filter(Patient_ID %in% df_olink$Sample) %>% 
+                         dplyr::pull(subject_id))) %>% 
+  tibble::rownames_to_column("protein") %>%
+  # subset proteins
+  dplyr::filter(protein %in% c("CD40-L","ANGPT1")) %>% 
+  tibble::column_to_rownames("protein") %>%
+  t %>% as.data.frame %>% 
+  dplyr::rename(CD40L="CD40-L") %>% 
+  tibble::rownames_to_column("subject_id") %>%
+  reshape2::melt() %>% 
+  # merge Patient_ID annotation for left_join
+  dplyr::left_join(anno %>% dplyr::select(subject_id,Patient_ID), by="subject_id") %>% 
+  # join ELISA data
+  dplyr::left_join(df_olink, by=c("Patient_ID"="Sample","variable"="protein"), suffix=c("_Olink","_ELISA"))
 
-# plot differential Platelet in the two clusters
-p_platelet <- z %>%
-  ggplot(aes(x=as.factor(Cluster), y=Platelet)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
-  scale_colour_manual(values = ann_colors$Group) +
-  theme_bw() +
-  xlab("Cluster") +
-  ylab("Platelet") +
-  ggtitle(sprintf("Platelet p-value: %.2e", da$platelet))
+# estimate correlation
+correl <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(p){
+  d <- df_plot %>%
+    dplyr::filter(variable==p) %>%
+    dplyr::filter(!is.na(value_ELISA))
+  
+  cc <- cor.test(x = d$value_Olink, y=d$value_ELISA)
+  cc
+})
 
-# plot differential age in the two clusters
-p_age <- z %>%
-  ggplot(aes(x=as.factor(Cluster), y=age)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
-  scale_colour_manual(values = ann_colors$Group) +
-  theme_bw() +
-  xlab("Cluster") +
-  ylab("age") +
-  ggtitle(sprintf("Age p-value: %.2e", da$age))
+gg2 <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(p){
+  df_plot %>%
+    dplyr::filter(variable==p) %>%
+    ggplot(aes(x=value_Olink,y=value_ELISA)) +
+    geom_point() +
+    # geom_smooth(method = "lm", se = FALSE, color="gray60", linetype="dashed") +
+    theme_bw() +
+    ggtitle(sprintf("%s cor:%.2f p-value:%.2e", p, correl[[p]]$estimate, correl[[p]]$p.value))
+})
 
-# plot differential averageProtein in the two clusters
-p_avProt <- z %>%
-  ggplot(aes(x=as.factor(Cluster), y=averageProt)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
-  scale_colour_manual(values = ann_colors$Group) +
-  theme_bw() +
-  xlab("Cluster") +
-  ylab("averageProt") +
-  ggtitle(sprintf("averageProt p-value: %.2e", da$avProt))
+pdf(sprintf("%s/SupplementaryFigure_1AB.pdf", Sys.Date()), width = 10, height = 5)
+ggarrange(plotlist = gg2)
+dev.off()
 
+#### Supplementary Figure 1CD ----
 
-# save plots to files
-pdf(sprintf("%s/SupplementaryFigure_5.pdf", Sys.Date()), width=15, height=5, onefile = F)
-ggarrange(p_platelet,p_avProt, p_age,
-          ncol=3,nrow=1,
-          labels = "AUTO",
+df_controls <- read_excel(path = "OtherProteomics.xlsx", sheet = "Controls") 
+
+gg <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(prot){
+  df_controls %>%
+    dplyr::mutate(Group=factor(Group, levels=c("control","case"))) %>%
+    dplyr::filter(protein==prot) %>%
+    dplyr::mutate(color=case_when(Group=="control"~"control",
+                                  HeatmapGroup=="A"~"High",
+                                  HeatmapGroup=="B"~"Low")) %>%
+    ggplot(aes(x=Group, y=value)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(aes(color=color), position = position_jitter(width=0.2)) +
+    theme_bw() +
+    ggtitle(prot)
+})
+
+pdf(sprintf("%s/SupplementaryFigure_1CD.pdf", Sys.Date()), width = 10, height = 5, onefile = F)
+ggarrange(plotlist = gg,
           common.legend = T)
 dev.off()
 
@@ -486,9 +504,75 @@ p_death_surv
 dev.off()
 
 # save plots to files
-pdf(sprintf("%s/SupplementaryFigure_4C-E.pdf", Sys.Date()), width=15, height=5, onefile = F)
+pdf(sprintf("%s/SupplementaryFigure_4CDE.pdf", Sys.Date()), width=15, height=5, onefile = F)
 ggarrange(p_platelet,p_age,p_ANG2, 
           ncol=3,nrow=1,
           labels = c("C","D","E"),
+          common.legend = T)
+dev.off()
+
+##### Supplementary Figure 5 ----
+
+# plot differential death in the two clusters
+p_death <- z %>% 
+  dplyr::select(Cluster, Mortality) %>% table() %>%
+  as.data.frame %>%
+  ggplot(aes(fill=Mortality, y=Freq, x=Cluster)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual(values = ann_colors$Mortality) +
+  theme_bw() +
+  ylab("Number of patients") +
+  ggtitle(sprintf("Mortality p-value: %.2e", da$mortality))
+
+# plot differential P:F ratio in the two clusters
+p_PF <- z %>%
+  ggplot(aes(x=as.factor(Cluster), y=intubation_pf_ratio)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
+  scale_colour_manual(values = ann_colors$Group) +
+  theme_bw() +
+  xlab("Cluster") +
+  ylab("P:F Ratio at intubation") +
+  ggtitle(sprintf("P:F Ratio p-value: %.2e", da$pf))
+
+# plot differential Platelet in the two clusters
+p_platelet <- z %>%
+  ggplot(aes(x=as.factor(Cluster), y=Platelet)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
+  scale_colour_manual(values = ann_colors$Group) +
+  theme_bw() +
+  xlab("Cluster") +
+  ylab("Platelet") +
+  ggtitle(sprintf("Platelet p-value: %.2e", da$platelet))
+
+# plot differential age in the two clusters
+p_age <- z %>%
+  ggplot(aes(x=as.factor(Cluster), y=age)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
+  scale_colour_manual(values = ann_colors$Group) +
+  theme_bw() +
+  xlab("Cluster") +
+  ylab("age") +
+  ggtitle(sprintf("Age p-value: %.2e", da$age))
+
+# plot differential averageProtein in the two clusters
+p_avProt <- z %>%
+  ggplot(aes(x=as.factor(Cluster), y=averageProt)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color=Group),position=position_jitter(0.2)) +
+  scale_colour_manual(values = ann_colors$Group) +
+  theme_bw() +
+  xlab("Cluster") +
+  ylab("averageProt") +
+  ggtitle(sprintf("averageProt p-value: %.2e", da$avProt))
+
+
+# save plots to files
+pdf(sprintf("%s/SupplementaryFigure_5.pdf", Sys.Date()), width=15, height=5, onefile = F)
+ggarrange(p_platelet,p_avProt, p_age,
+          ncol=3,nrow=1,
+          labels = "AUTO",
           common.legend = T)
 dev.off()

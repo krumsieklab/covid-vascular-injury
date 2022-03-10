@@ -24,9 +24,18 @@ if(!dir.exists(paste0(Sys.Date(),sep=""))) {
   dir.create(paste0(Sys.Date(),sep=""))
 }
 
-#### Load Data ----
+#### Download Data ---
+
+# download preprocessed proteomics data from figshare
 
 file_data <- "Recovery.xlsx"
+load.web.file(
+  url="https://figshare.com/ndownloader/files/34347185",
+  md5sum = "1298602e7d0ae0121368080f8f8143db",
+  outfile = file_data
+)
+
+#### Load Data ----
 
 D <- 
   # load proteomics data
@@ -177,6 +186,8 @@ dev.off()
 dt_diff <- dt1 %>% dplyr::select(any_of(prot)) %>%
   subtract(dt0 %>% dplyr::select(any_of(prot))) %>%
   dplyr::mutate(name=dt0$Patient_ID) %>%
+  tibble::rownames_to_column("old_names") %>%
+  dplyr::select(-old_names) %>%
   tibble::column_to_rownames(var="name") %>%
   tibble::rownames_to_column("Patient_ID") %>%
   # use post ICU clustering
@@ -220,7 +231,7 @@ ggarrange(plotlist = p,
           common.legend = T)
 dev.off()
 
-#### Supplementary Figure 6 A-D -----
+#### Supplementary Figure 7 A-D -----
 
 # plot differential platelet in the two clusters
 p_platelet <- z1 %>%
@@ -263,17 +274,19 @@ p_avProt<- z1 %>%
   ggtitle(sprintf("Average Protein p-value: %.2e", da$avProt))
 
 # save plots to files
-pdf(sprintf("%s/SupplementaryFigure_6A-D.pdf", Sys.Date()), width=20, height=5, onefile = F)
+pdf(sprintf("%s/SupplementaryFigure_7A-D.pdf", Sys.Date()), width=20, height=5, onefile = F)
 ggarrange(p_platelet,p_age,p_avProt,p_ang2,
           ncol=4,nrow=1,
           common.legend = T)
 dev.off()
 
-#### Supplementary Figure 6 E-F ----
+#### Supplementary Figure 7 E-F ----
 
 platelet_diff <- dt1 %>% dplyr::select(platelet) %>%
   subtract(dt0 %>% dplyr::select(platelet)) %>%
   dplyr::mutate(name=dt0$Patient_ID) %>%
+  tibble::rownames_to_column("old_names") %>%
+  dplyr::select(-old_names) %>%
   tibble::column_to_rownames(var="name") %>%
   tibble::rownames_to_column("Patient_ID") %>%
   # use post ICU clustering
@@ -304,6 +317,8 @@ p_pl <- dt %>%
 ang2_diff <- dt1 %>% dplyr::select(LogANG2) %>%
   subtract(dt0 %>% dplyr::select(LogANG2)) %>%
   dplyr::mutate(name=dt0$Patient_ID) %>%
+  tibble::rownames_to_column("old_names") %>%
+  dplyr::select(-old_names) %>%
   tibble::column_to_rownames(var="name") %>%
   tibble::rownames_to_column("Patient_ID") %>%
   # use post ICU clustering
@@ -332,7 +347,7 @@ p_a <- dt %>%
   ggtitle(sprintf("LogANG2 p-value:%.2e",res_ang2$p.value))
 
 # save boxplots to file
-pdf(sprintf("%s/SupplementaryFigure_6E-F.pdf", Sys.Date()), width = 10, height = 6, onefile = F)
+pdf(sprintf("%s/SupplementaryFigure_7E-F.pdf", Sys.Date()), width = 10, height = 6, onefile = F)
 ggarrange(p_pl,p_a,
           ncol=2,nrow=1,
           common.legend = T)

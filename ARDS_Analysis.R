@@ -155,11 +155,13 @@ da <- data.frame(# Fisher's test for Death
   age = wilcox.test(x=z$age[z$Cluster==1], y=z$age[z$Cluster==2])$p.value,
   avProt = wilcox.test(x=z$averageProt[z$Cluster==1], y=z$averageProt[z$Cluster==2])$p.value)
 
+# create data for survival analysis
 dt_surv <- z %>%
   dplyr::left_join(D1 %>% colData %>% as_data_frame %>% dplyr::select(subject_id, event,time_diff), 
                    by="subject_id") %>%
   dplyr::filter(time_diff>=0)
 
+# run survival model
 fit <- survfit(formula = Surv(time = time_diff, event = event) ~ Cluster, data = dt_surv)
 pval <- survminer::surv_pvalue(fit = fit, data = dt_surv, method = "survdiff")
 # Visualize with survminer
@@ -221,6 +223,7 @@ p_cor <- zsub %>%
   ylab("Log(RIPK3)") +
   ggtitle(sprintf("Log(ANGPT2) vs Log(RIPK3): cor %.2f, p-value %.2e", cc$estimate, cc$p.value))
 
+# save plots to file
 pdf(sprintf("%s/Figure_5AB.pdf", Sys.Date()), width=12, height=5, onefile = F)
 ggarrange(p_RIPK3, p_cor,
           ncol=2, nrow=1,
@@ -230,6 +233,7 @@ dev.off()
 
 #### Supplementary Figure 1AB ----
 
+# load O-link validation data
 df_olink <- read_excel(path = "OtherProteomics.xlsx", sheet = "Olink_validation")
 
 # merge Olink data for CD40L and ANGPT1 with new ELISA data  
@@ -271,12 +275,14 @@ gg2 <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(p){
     ggtitle(sprintf("%s cor:%.2f p-value:%.2e", p, correl[[p]]$estimate, correl[[p]]$p.value))
 })
 
+# save plots to file
 pdf(sprintf("%s/SupplementaryFigure_1AB.pdf", Sys.Date()), width = 10, height = 5)
 ggarrange(plotlist = gg2)
 dev.off()
 
 #### Supplementary Figure 1CD ----
 
+# load ELISA data
 df_controls <- read_excel(path = "OtherProteomics.xlsx", sheet = "Controls") 
 
 gg <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(prot){
@@ -293,6 +299,7 @@ gg <- lapply(c("CD40L","ANGPT1") %>% {names(.)=.;.}, function(prot){
     ggtitle(prot)
 })
 
+# save to file
 pdf(sprintf("%s/SupplementaryFigure_1CD.pdf", Sys.Date()), width = 10, height = 5, onefile = F)
 ggarrange(plotlist = gg,
           common.legend = T)

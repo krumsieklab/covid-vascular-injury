@@ -76,7 +76,6 @@ Dzz <- Dyy %>%
   maplet::mt_modify_filter_samples(filter = Status=="COVID") %>%
   {.}
   
-
 # loop over outcomes
 for (i in 1:nrow(outcomes)) {
   Dzz %<>% 
@@ -356,6 +355,7 @@ dev.off()
 
 #### Figure 4B ----
 
+# load autopsy quantification data
 df <- read_excel(path="OtherProteomics.xlsx",sheet = "Autopsy_quantification",col_names = T) %>%
   dplyr::mutate(Group=factor(Group,levels = c("Low ANGPT2","High ANGPT2")))
 
@@ -367,6 +367,7 @@ p <- df %>%
   theme_bw() +
   ggtitle(sprintf("CD61 p-value %.2e",wilcox.test(x=log10(df$CD61[df$Group=="High ANGPT2"]),y=log10(df$CD61[df$Group=="Low ANGPT2"]))$p.value))
 
+# save to file
 pdf(sprintf("%s/Figure_4B.pdf",Sys.Date()), width = 5, height = 5)
 p
 dev.off()

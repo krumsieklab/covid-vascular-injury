@@ -131,11 +131,12 @@ hh1 <- pheatmap(dt %>% dplyr::filter(Label=="postICU") %>%
                 color = colorRampPalette(c("#4575B4","white","#D73027"))(length(breaksList)),
                 breaks = breaksList)
 
+# save heatmap to file
 pdf(sprintf("%s/Figure_6A.pdf", Sys.Date()), width = 9, height = 6, onefile = F)
 print(hh1)
 dev.off()
 
-#### Cluster Differential Analysis ----
+#### Figure 6B ----
 
 # extract clusters and get annotations for differential analysis
 z1 <- data.frame(Cluster=sort(cutree(hh1$tree_col, k=n_clust))) %>% 
@@ -163,8 +164,6 @@ da <- data.frame(
   LogANG2 = wilcox.test(x=z1$LogANG2[z1$Cluster_ord==1], y=z1$LogANG2[z1$Cluster_ord==2])$p.value,
   age = wilcox.test(x=z1$age[z1$Cluster_ord==1], y=z1$age[z1$Cluster_ord==2])$p.value,
   avProt = wilcox.test(x=z1$averageProt[z1$Cluster_ord==1], y=z1$averageProt[z1$Cluster_ord==2])$p.value)
-
-#### Figure 6B ----
 
 # plot follow-up
 p_fu <- z1 %>%
